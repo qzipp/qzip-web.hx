@@ -1,0 +1,9 @@
+--dce no
+-cp src
+-main Client
+
+-lib tink_web
+-lib tink_template
+
+-D no-deprecation-warnings
+-js export/js/Client.js

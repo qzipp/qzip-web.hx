@@ -1,0 +1,12 @@
+--dce no
+-cp src
+-main Server
+
+-lib hxnodejs
+-lib tink_template
+-lib tink_web
+
+--macro tink.Template.addFlavor('html,mtt', '::', '::', true)
+
+-D no-deprecation-warnings
+-js export/js/Server.js

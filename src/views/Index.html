@@ -1,0 +1,25 @@
+::function main_layout(content: tink.template.Html)::
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>:3</title>
+  <link rel="stylesheet" href="/assets/css/main.css" />
+</head>
+<body>
+  <main>::content::</main>
+  <script src="/assets/js/client.js"></script>
+</body>
+</html>
+::end::
+
+::var content::
+<h1>purrr ::meow::</h1>
+<div>::purr::; ::purr.test::</div>
+<div>2 + 2 = ::wawa::</div>
+<img src="https://gif.fxtwitter.com/tweet_video/HBoRgTTX0AAtxn4.gif" alt="sibuxiang and tuye"/>
+
+<style>::style::</style>
+::end::
+
+::main_layout(content)::

@@ -1,0 +1,100 @@
+package utilities;
+
+import haxe.macro.Type;
+import haxe.macro.Expr;
+import haxe.macro.Context;
+
+import sys.FileSystem;
+import haxe.io.Path;
+import sys.io.File;
+
+import haxe.macro.Compiler;
+
+// bwa??
+enum FileType {
+  TFile;
+  TDirectory;
+}
+
+typedef FileData = {
+  var path: String;
+  var type: FileType;
+  
+  var content: String;
+}
+
+typedef FSRData = {
+  var files: Array<FileData>;
+  var path: String;
+}
+
+class FileSystemRouterMacro {
+  static function read_file(path_str: String): FileData {
+    final path = new Path(path_str);
+    
+    final type = FileSystem.isDirectory(path_str)
+      ? TDirectory
+      : TFile;
+
+    final content = {
+      try {
+        File.getContent(path_str);
+      } catch(e) {
+        null;
+      }
+    };
+    
+    return {
+      type: type,
+      path: path.toString(),
+      content: content
+    };
+  }
+
+  public static function read_directory_files_recursively(path: String): Array<FileData> {
+    if(!FileSystem.exists(path)) throw 'invalid directory path `$path`';
+    var files = FileSystem.readDirectory(path);
+  
+    return [
+      for(file_name in files) {
+        final file_path = Path.join([path, file_name]);
+
+        if(!FileSystem.isDirectory(file_path)) {
+          final file = FileSystemRouterMacro.read_file(file_path);
+
+          file;
+        } else {
+          var files = FileSystemRouterMacro.read_directory_files_recursively(file_path);
+          
+          for(file in files) { file; }
+        }
+      }
+    ];
+  }
+
+  public static macro function read(path: String): ExprOf<FSRData> {
+    final files = utilities.FileSystemRouterMacro.read_directory_files_recursively(path);
+
+    for(file in files) {
+      @:privateAccess
+      var import_path = FileSystemRouter.path_to_import_path(file.path);
+
+      if(import_path != null)
+        haxe.macro.Context.getType(import_path);
+        trace(Type.resolveClass(import_path));
+    }
+
+    return macro {
+      var expr = []; 
+      for(file in $v{files}) {
+
+        expr.push(file);
+      };
+
+      {
+        path: $v{path},
+        files: expr
+      };
+    }
+  } 
+}

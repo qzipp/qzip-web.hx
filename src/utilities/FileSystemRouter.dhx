@@ -1,0 +1,113 @@
+package utilities;
+
+using StringTools;
+
+import haxe.io.Path;
+
+enum ERoute {
+  TPageModel(file: FileData, import_path: String);
+  TPageView(file: FileData);
+  TPageStyle(file: FileData);
+  
+  TServer(file: FileData);
+}
+
+typedef RouteMap = Map<String, Array<RouteEnum>>;
+
+class FileSystemRouter {
+  function relative_to(path: String, dir: String) {
+    path = Path.normalize(path);
+    dir = Path.normalize(dir);
+    
+    path = {
+      if(path.startsWith(dir)) {
+        path.replace(dir, "");
+			} else {
+				throw 'give a valid path `$path` or dir `$dir`';
+			}
+		};
+
+    if(path == "") path = ".";
+
+    return path;
+  } 
+
+  static function path_to_import_path(path: String) {
+    if(!path.endsWith(".hx")) return null; 
+
+    path = ~/(\/)/g.replace(path, ".");
+    path = ~/(.*)(\.hx)/g.replace(path, "$1");
+  
+    return path;
+  } 
+
+  function read_files(fsrdata: FSRData): RouteMap {
+    final files = fsrdata.files;
+    final path = fsrdata.path;
+
+    var map: RouteMap = new Map();
+
+		for(file in files) {
+			final file_path = new Path(file.path);
+			final file_name = '${file_path.file}.${file_path.ext}';
+
+			final route_path = {
+				var route_path = './${file_path.dir}/';
+				route_path = this.relative_to(route_path, path);
+
+				if(route_path == ".")
+					route_path = "/";
+
+				route_path;
+			};
+
+      if(!map.exists(route_path))
+        map.set(route_path, []);
+
+			switch(file_name) {
+				case "Page.hx":
+					final import_path = path_to_import_path(file_path.toString());
+					trace(import_path);
+
+
+          map.get(route_path).push(PageModel(file, import_path));
+				case "Page.html":
+					map.get(route_path).push(PageView(file));
+				case "Page.css":
+					map.get(route_path).push(PageStyle(file));
+				case _:
+					continue;
+					// throw "Get yo nasty ass file outa here buh";
+			}
+		}
+
+    return map;
+  }
+
+  function register() {
+    for(route_path => route_data in this.routes) {
+      for(r in route_data) {
+        switch(r) {
+          case PageModel(file, import_path):
+            // trace(import_path);
+            trace(file, Type.resolveClass("routes.Page"));
+          case _: trace("p");
+        }
+      }
+    }
+  }
+
+  final path: String;
+  final routes: RouteMap;
+
+  private final files: Array<FileSystemRouterMacro.FileData>;
+
+  public function new(fsrdata: FileSystemRouterMacro.FSRData) {
+    this.files = fsrdata.files;
+    this.path = fsrdata.path;
+
+    this.routes = read_files(fsrdata);
+
+    register();
+  }
+}
